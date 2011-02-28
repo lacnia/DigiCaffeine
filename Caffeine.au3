@@ -9,7 +9,7 @@
 #AutoIt3Wrapper_UseX64=N
 #AutoIt3Wrapper_Res_Comment=http://xan-manning.co.uk/
 #AutoIt3Wrapper_Res_Description=(Digital)Caffeine
-#AutoIt3Wrapper_Res_Fileversion=1.5.1.3
+#AutoIt3Wrapper_Res_Fileversion=1.5.1.4
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=P
 #AutoIt3Wrapper_Res_Language=2057
 #AutoIt3Wrapper_Res_LegalCopyright=Copyright © 2010 Xan Manning
@@ -37,6 +37,7 @@ Global $WININI							= BitOR(1, 2)
 
 $enableShift = IniRead("DigitalCaffeine.ini", "config", "UseShift", False)
 $enableMouse = IniRead("DigitalCaffeine.ini", "config", "UseMouse", False)
+$counter = 0
 
 If $CmdLine[0] > 0 And $CmdLine[1] == "-useshift" And Not($enableMouse == True) Then
 	$enableShift = True
@@ -88,7 +89,6 @@ Else
 EndIf
 
 If IsAdmin() Then
-	TrayItemSetState($mouseitem, $TRAY_DISABLED)
 	TrayCreateItem("")
 	$adminitem = TrayCreateItem("System Parameter Control")
 	TrayItemSetState($adminitem, $TRAY_DISABLED)
@@ -115,10 +115,9 @@ EndIf
 
 ;---------------Main loop----------------
 
-$counter = 0
 
 While 1
-    If $runWhile == True And IsAdmin() == False Then
+    If $runWhile == True And IsAdminMouseDisable() Then
 	$counter = 0
 	$sleptFor = 0
 	
@@ -166,8 +165,18 @@ Exit
 ;---------------Functions----------------
 
 Func DisplayAbout()
-	TrayItemSetState($infoitem,$TRAY_UNCHECKED)
+	TrayItemSetState($infoitem, $TRAY_UNCHECKED)
 	MsgBox(64, "About (Digital)Caffeine.", "(Digital)Caffeine" & @CRLF & "Written by Xan Manning, 2010" & @CRLF & @CRLF & "Stops the screensaver by simulating keypress." & @CRLF & @CRLF & "http://xan-manning.co.uk/", 300)
+EndFunc
+
+Func IsAdminMouseDisable()
+	If IsAdmin() And $enableMouse == True Then
+		Return True
+	ElseIf IsAdmin() And $enableMouse == False Then
+		Return False
+	Else
+		Return True
+	EndIf
 EndFunc
 
 Func ExitEvent()
@@ -213,8 +222,13 @@ Func useMouse()
 		$enableMouse = False
 		IniWrite ("DigitalCaffeine.ini", "config", "UseMouse", False)
 		TrayItemSetState($mouseitem,$TRAY_UNCHECKED)
+		If IsAdmin() Then
+			$mouseMessage = "Caffeine will now use administrator rights to disable the screensaver."
+		Else
+			$mouseMessage = "Caffeine will now simulate a keypress every minute."
+		EndIf
 		If $quiet == False Then
-			TrayTip("(Digital)Caffeine", "Caffeine will now simulate a keypress every minute.", 20, 1)
+			TrayTip("(Digital)Caffeine", $mouseMessage, 20, 1)
 		EndIf
 	Else
 		$lastpos = MouseGetPos()
