@@ -1,0 +1,23 @@
+TrayItemSetState($infoitem,$TRAY_UNCHECKED)
+    GuiCreate("About",300,80)
+	$homePageButton=GuiCtrlCreateButton("Visit homepage",65,50,100,20)
+	$closeButton=GuiCtrlCreateButton("Close",168,50,100,20)
+	$label1=GuiCtrlCreateLabel("Stops the screensaver by simulating keypress.",60,17,250,18)
+	$label1=GuiCtrlCreateLabel("Written by Xan Manning",105,31,152,16)
+	$label2=GuiCtrlCreateLabel("(Digital)Caffeine",125,3,140,15)
+    $icon1 = GUICtrlCreateIcon(@AutoItExe, -1, 10, 10)
+    GUICtrlSetOnEvent($homePageButton,"visitKnoxious")
+	GUICtrlSetOnEvent($closeButton,"OnClose")
+    
+    GUISetOnEvent($GUI_EVENT_CLOSE,"OnClose")
+    
+    GUISetState()
+	
+Func OnClose()
+    GUIDelete()
+EndFunc
+
+Func visitKnoxious()
+	GUIDelete()
+	Run(@COMSPEC & " /c start " & "http://knoxious.co.uk/", "", @SW_HIDE)
+EndFunc

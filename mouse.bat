@@ -1,0 +1,1 @@
+Caffeine.exe -usemouse
