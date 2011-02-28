@@ -1,5 +1,6 @@
 #NoTrayIcon
 ;#include <GUIConstants.au3>
+#include <WinAPI.au3>
 #region - AutoIt3Wrapper Directives
 #AutoIt3Wrapper_Icon=caffeine.ico
 #AutoIt3Wrapper_Version=P
@@ -8,7 +9,7 @@
 #AutoIt3Wrapper_UseX64=N
 #AutoIt3Wrapper_Res_Comment=http://xan-manning.co.uk/
 #AutoIt3Wrapper_Res_Description=(Digital)Caffeine
-#AutoIt3Wrapper_Res_Fileversion=1.5.1.1
+#AutoIt3Wrapper_Res_Fileversion=1.5.1.3
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=P
 #AutoIt3Wrapper_Res_Language=2057
 #AutoIt3Wrapper_Res_LegalCopyright=Copyright © 2010 Xan Manning
@@ -28,6 +29,9 @@ Opt("TrayMenuMode",1); no default tray menuitems
 
 Global $TRAY_CHECKED					= 1
 Global $TRAY_UNCHECKED					= 4
+Global $TRAY_DISABLED					= 128
+Global $SPI_SETSCREENSAVEACTIVE 		= 0x0011
+Global $WININI							= BitOR(1, 2)
 
 ;---------------Set initial variables----------------
 
@@ -54,6 +58,9 @@ EndIf
 
 $sleepTime = 1000 * 59
 $runWhile = True
+If IsAdmin() Then
+	_WinAPI_SystemParametersInfo($SPI_SETSCREENSAVEACTIVE, 0, 0, $WININI)
+EndIf
 $quiet = IniRead("DigitalCaffeine.ini", "config", "Quiet", False)
     
 ;---------------Build UI----------------
@@ -61,32 +68,39 @@ TraySetClick(16)
 
 $enableitem = TrayCreateItem("Enable")
 TrayItemSetOnEvent(-1, "toggleScript")
-TrayItemSetState($enableitem,$TRAY_CHECKED)
+TrayItemSetState($enableitem, $TRAY_CHECKED)
 $quietitem = TrayCreateItem("Quiet")
 TrayItemSetOnEvent(-1,"quietScript")
 
 If $quiet == True Then
-	TrayItemSetState($quietitem,$TRAY_CHECKED)
+	TrayItemSetState($quietitem, $TRAY_CHECKED)
 Else
-	TrayItemSetState($quietitem,$TRAY_UNCHECKED)
+	TrayItemSetState($quietitem, $TRAY_UNCHECKED)
 EndIf
 
 $mouseitem = TrayCreateItem("Use Mouse")
 TrayItemSetOnEvent(-1,"useMouse")
 
 If $enableMouse == True Then
-	TrayItemSetState($mouseitem,$TRAY_CHECKED)
+	TrayItemSetState($mouseitem, $TRAY_CHECKED)
 Else
-	TrayItemSetState($mouseitem,$TRAY_UNCHECKED)
+	TrayItemSetState($mouseitem, $TRAY_UNCHECKED)
+EndIf
+
+If IsAdmin() Then
+	TrayItemSetState($mouseitem, $TRAY_DISABLED)
+	TrayCreateItem("")
+	$adminitem = TrayCreateItem("System Parameter Control")
+	TrayItemSetState($adminitem, $TRAY_DISABLED)
 EndIf
 
 TrayCreateItem("")
 $infoitem = TrayCreateItem("About")
-TrayItemSetOnEvent(-1,"DisplayAbout")
-TrayItemSetState($infoitem,$TRAY_UNCHECKED)
+TrayItemSetOnEvent(-1, "DisplayAbout")
+TrayItemSetState($infoitem, $TRAY_UNCHECKED)
 TrayCreateItem("")
 $exititem = TrayCreateItem("Exit")
-TrayItemSetOnEvent(-1,"ExitEvent")
+TrayItemSetOnEvent(-1, "ExitEvent")
 
 TraySetIcon(@AutoItExe)
 
@@ -101,8 +115,10 @@ EndIf
 
 ;---------------Main loop----------------
 
+$counter = 0
+
 While 1
-    If $runWhile == True Then
+    If $runWhile == True And IsAdmin() == False Then
 	$counter = 0
 	$sleptFor = 0
 	
@@ -155,6 +171,9 @@ Func DisplayAbout()
 EndFunc
 
 Func ExitEvent()
+	If IsAdmin() Then
+		_WinAPI_SystemParametersInfo($SPI_SETSCREENSAVEACTIVE, 1, 0, $WININI)
+	EndIf
     Exit
 EndFunc
 
@@ -163,6 +182,9 @@ Func toggleScript()
 		TrayItemSetState($enableitem,$TRAY_CHECKED)
 		$runWhile = True
 		TraySetIcon(@AutoItExe)
+		If IsAdmin() Then
+			_WinAPI_SystemParametersInfo($SPI_SETSCREENSAVEACTIVE, 0, 0, $WININI)
+		EndIf
 		If $quiet == False Then
 			TrayTip("Enabled (Digital)Caffeine", "Caffeine has now been enabled and is running in the background.", 20, 1)
 			TraySetToolTip("(Digital)Caffeine Enabled")
@@ -173,6 +195,9 @@ Func toggleScript()
 		TrayItemSetState($enableitem,$TRAY_UNCHECKED)
 		TraySetIcon(@AutoItExe, -5)
 		$runWhile = False
+		If IsAdmin() Then
+			_WinAPI_SystemParametersInfo($SPI_SETSCREENSAVEACTIVE, 1, 0, $WININI)
+		EndIf
 		If $quiet == False Then
 			TrayTip("Disabled (Digital)Caffeine", "Caffeine is still running but is disabled.", 20, 1)
 			TraySetToolTip("(Digital)Caffeine Disabled")
